@@ -1,6 +1,6 @@
 ---
 name: golive-auth
-description: Adicionar autenticação de utilizadores à tua app com o auth gerido do GoLive — activar, inicializar o SDK no cliente com as chaves GOLIVE_AUTH_*, gerir utilizadores, e a facturação por MAU.
+description: Adicionar autenticação de utilizadores à tua app com o auth gerido do GoLive — activar, usar o SDK @golive/auth no cliente (apiKey + tenant), gerir utilizadores, e a facturação por MAU.
 ---
 
 # GoLive — Autenticação (MAU)
@@ -15,33 +15,41 @@ grátis; acima disso, **100 Kz/utilizador activo**. Requer o plano Pague por uso
 golive auth enable
 ```
 
-Ao activar, o backend recebe as chaves `GOLIVE_AUTH_*` no ambiente:
-`GOLIVE_AUTH_TENANT_ID`, `GOLIVE_AUTH_API_KEY`, `GOLIVE_AUTH_DOMAIN`,
-`GOLIVE_AUTH_PROJECT_ID`.
+As chaves (`apiKey` + `tenant`) aparecem no separador **Autenticação → Integrar
+no cliente** do teu projecto no dashboard.
 
-## Inicializar no cliente (web/mobile)
+## Cliente: SDK @golive/auth (sem dependências)
 
-Usa o SDK do Firebase Auth com o `tenantId` — a config aparece no dashboard:
+Instala a partir do GoLive (o registry npm não é usado):
+
+```bash
+npm i https://golive.co.ao/sdk/golive-auth.tgz
+```
 
 ```js
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { GoLiveAuth } from "@golive/auth";
 
-const app = initializeApp({
-  apiKey: GOLIVE_AUTH_API_KEY,
-  authDomain: GOLIVE_AUTH_DOMAIN,
-  projectId: GOLIVE_AUTH_PROJECT_ID,
+const auth = new GoLiveAuth({
+  apiKey: "AIza…",   // chave pública do projecto
+  tenant: "…",       // tenant de autenticação
 });
-const auth = getAuth(app);
-auth.tenantId = GOLIVE_AUTH_TENANT_ID;
 
-await signInWithEmailAndPassword(auth, email, password);
+await auth.signIn(email, password);          // ou signUp
+const token = await auth.getIdToken();        // Authorization: Bearer <token>
+
+auth.onChange((user) => console.log(user ? user.email : "sem sessão"));
 ```
+
+Sem passo de build, também: `import { GoLiveAuth } from "https://golive.co.ao/sdk/auth.js"`.
+
+Métodos: `signUp`, `signIn`, `signOut`, `getIdToken`, `sendPasswordReset`,
+`updateProfile`, `onChange`, `currentUser`. A sessão é guardada e o token renova
+sozinho (o utilizador só sai com `signOut()`). Erros são `GoLiveAuthError` com
+`.code` estável e `.message` em português.
 
 ## Gerir utilizadores
 
-Separador **Autenticação** no dashboard (criar, procurar, remover — consola
-estilo Firebase) ou pela CLI:
+Separador **Autenticação** no dashboard (criar, procurar, remover) ou pela CLI:
 
 ```bash
 golive auth status               # activo? MAU do mês

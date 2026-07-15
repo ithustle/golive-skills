@@ -1,6 +1,6 @@
 ---
 name: golive-edge-functions
-description: Escrever edge functions no GoLive — uma pasta functions/ onde cada ficheiro é uma rota, handlers em TypeScript (compilados para JS no deploy), o contrato req/resposta, e como publicar e medir o consumo.
+description: Escrever edge functions no GoLive — uma pasta functions/ onde cada ficheiro é uma rota, handlers em TypeScript no contrato Web/Fetch (Request → Response), com dependências npm, e como publicar e medir o consumo.
 ---
 
 # GoLive — Edge Functions
@@ -19,29 +19,45 @@ Uma pasta `functions/` sem framework (sem `package.json` de app, sem
 | `functions/hello.ts` | `/hello` |
 | `functions/api/users.ts` | `/api/users` |
 
-## Handler (TypeScript ou JavaScript)
+Ficheiros ou pastas começados por `_` (ex.: `_lib.ts`) são **privados**: podes
+importá-los, mas não viram rota.
 
-Escreve em **TypeScript** (`.ts`) ou JS (`.mjs`) — o deploy **compila TS → JS**
-(apaga os tipos), sem `tsconfig` nem build da tua parte. Cada ficheiro exporta
-um `default` que recebe `req` e devolve `{ status?, headers?, body? }`:
+## Handler: contrato Web/Fetch
+
+Escreve em **TypeScript** (`.ts`) ou JS (`.mjs`) — o deploy **compila e empacota**
+por ti, sem `tsconfig` nem build da tua parte. Cada ficheiro exporta um `default`
+que recebe um `Request` e devolve um `Response` (as APIs standard da Web):
 
 ```ts
 // functions/hello.ts  ->  /hello?name=Ana
-export default async (req: { query: Record<string, string> }) => ({
-  status: 200,
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({ hello: req.query.name ?? "world" }),
-});
+export default async (request: Request) => {
+  const name = new URL(request.url).searchParams.get("name") ?? "world";
+  return Response.json({ hello: name });
+};
 ```
 
-`req`: `{ method, path, query, headers, body? }` (`body` é texto cru; `undefined`
-em GET/HEAD). A resposta: `status` (default 200), `headers` (default
-`content-type: application/json`), `body` (texto).
+Tens a `Request` inteira: `request.method`, `request.url`, `request.headers` e o
+corpo com `await request.json()` / `request.text()`. Devolves qualquer `Response`
+(`Response.json(...)`, HTML, redirects, streams…).
+
+## Dependências
+
+Podes fazer `import` de pacotes npm e de outros ficheiros — o deploy empacota
+tudo num módulo auto-contido por rota:
+
+```ts
+// functions/slug.ts
+import slugify from "slugify";        // pacote npm
+import { greet } from "./_lib.js";    // ficheiro teu (privado)
+
+export default (request: Request) =>
+  Response.json({ slug: slugify(greet("Olá Mundo")) });
+```
 
 ## Publicar
 
 ```bash
-golive deploy          # deteta edge-functions e publica as rotas
+golive deploy          # deteta edge-functions, empacota e publica as rotas
 golive functions ls    # rotas + invocações/GB-s/Kz do período
 ```
 
@@ -50,7 +66,6 @@ servidores.
 
 ## Regras
 
-- **Auto-contido:** cada handler não faz `import` de outros ficheiros nem de
-  pacotes externos (não há bundling). O `import type` é apagado na compilação,
-  por isso podes tipar à vontade.
-- Rotas desconhecidas devolvem 404. Erros no handler devolvem 500 com a mensagem.
+- O handler **tem de** devolver um `Response`. Rotas desconhecidas devolvem 404;
+  erros no handler devolvem 500 com a mensagem.
+- `_ficheiro` / `_pasta` são privados (importáveis, mas não são rotas).

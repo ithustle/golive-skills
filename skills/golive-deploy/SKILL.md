@@ -51,6 +51,7 @@ golive link --repo org/nome  # git push -> deploy automático (golive unlink des
 golive deploys               # histórico
 golive rollback [deployId]   # volta ao deploy anterior (sem id: o último válido)
 golive env set K=V           # var de ambiente (injectada no próximo deploy)
+golive env file .env         # envia um .env inteiro de uma vez
 golive env ls / pull         # listar / escrever um .env local
 golive domains add exemplo.ao  # domínio próprio (cria um CNAME -> cname.golive.ao; SSL automático)
 golive logs [--no-follow]    # build + runtime em directo

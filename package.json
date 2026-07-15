@@ -1,0 +1,18 @@
+{
+  "name": "golive-skills",
+  "version": "1.0.0",
+  "description": "Skills do GoLive para agentes de código (Claude Code, TM Code, e outros)",
+  "type": "module",
+  "bin": {
+    "golive-skills": "./bin/install.mjs"
+  },
+  "files": [
+    "bin",
+    "skills"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ithustle/golive-skills.git"
+  }
+}

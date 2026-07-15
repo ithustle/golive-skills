@@ -23,34 +23,34 @@ Windsurf — e qualquer agente que suporte a especificação
 
 ## Instalação
 
-**`npx skills add`** (recomendado) — a [CLI da agentskills.io](https://github.com/vercel-labs/skills)
-instala nos agentes que deteta (Claude Code, Cursor, Codex, Windsurf, Cline, …);
-usa `-a <agente>` para escolher:
+**`npx ithustle/golive-skills`** (recomendado) — instalador próprio que cobre o
+**Claude Code E o TM Code**, incluindo os alvos que a CLI da Vercel não suporta
+(`.tms/skills` no projecto, `~/.toquemedia-studio/skills` global):
 
 ```bash
-# todos os skills
-npx skills add ithustle/golive-skills --all
+# no teu projecto → .claude/skills/ + .tms/skills/
+npx ithustle/golive-skills
 
-# ou skills específicos
-npx skills add ithustle/golive-skills --skill golive-deploy -y
+# global (todos os projectos) → ~/.claude/skills/ + ~/.toquemedia-studio/skills/
+npx ithustle/golive-skills --global
 
-# para um agente específico
+# só algumas skills
+npx ithustle/golive-skills --only golive-deploy,golive-auth
+```
+
+**`npx skills add`** — a [CLI da agentskills.io](https://github.com/vercel-labs/skills)
+cobre outros agentes (Cursor, Codex, Windsurf, Cline, …), mas **não o TM Code**:
+
+```bash
 npx skills add ithustle/golive-skills -a claude-code -a cursor
 ```
 
-> **TM Code** ainda não é suportado pela CLI da Vercel (não tem alvo
-> `.toquemedia-studio/skills/`) — instala-o pelo método manual.
-
-**Manual** (TM Code, ou qualquer agente):
+**Manual** (qualquer agente) — copia a pasta da skill:
 
 ```bash
 git clone https://github.com/ithustle/golive-skills.git
-
-# TM Code: .toquemedia-studio/skills/ (global: ~/.toquemedia-studio/skills/)
-cp -r golive-skills/skills/golive-deploy .toquemedia-studio/skills/
-
-# Claude Code: .claude/skills/ (global: ~/.claude/skills/)
-cp -r golive-skills/skills/golive-deploy .claude/skills/
+cp -r golive-skills/skills/golive-deploy .tms/skills/          # TM Code (projecto)
+cp -r golive-skills/skills/golive-deploy .claude/skills/       # Claude Code
 ```
 
 O agente deteta os skills automaticamente ao iniciar. Basta pedires *"faz deploy

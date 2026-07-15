@@ -23,7 +23,9 @@ Windsurf — e qualquer agente que suporte a especificação
 
 ## Instalação
 
-**`npx skills add`** (recomendado):
+**`npx skills add`** (recomendado) — a [CLI da agentskills.io](https://github.com/vercel-labs/skills)
+instala nos agentes que deteta (Claude Code, Cursor, Codex, Windsurf, Cline, …);
+usa `-a <agente>` para escolher:
 
 ```bash
 # todos os skills
@@ -31,22 +33,24 @@ npx skills add ithustle/golive-skills --all
 
 # ou skills específicos
 npx skills add ithustle/golive-skills --skill golive-deploy -y
-npx skills add ithustle/golive-skills --skill golive-database -y
+
+# para um agente específico
+npx skills add ithustle/golive-skills -a claude-code -a cursor
 ```
 
-**Manual** — Claude Code / TM Code / Codex CLI:
+> **TM Code** ainda não é suportado pela CLI da Vercel (não tem alvo
+> `.tms/skills/`) — instala-o pelo método manual.
+
+**Manual** (TM Code, ou qualquer agente):
 
 ```bash
 git clone https://github.com/ithustle/golive-skills.git
 
-# Claude Code: .claude/skills/ (global: ~/.claude/skills/)
-cp -r golive-skills/skills/golive-deploy .claude/skills/
-
 # TM Code: .tms/skills/ (global: ~/.toquemedia-studio/skills/)
 cp -r golive-skills/skills/golive-deploy .tms/skills/
 
-# OpenAI Codex CLI: .codex/skills/
-cp -r golive-skills/skills/golive-deploy .codex/skills/
+# Claude Code: .claude/skills/ (global: ~/.claude/skills/)
+cp -r golive-skills/skills/golive-deploy .claude/skills/
 ```
 
 O agente deteta os skills automaticamente ao iniciar. Basta pedires *"faz deploy

@@ -1,6 +1,11 @@
 ---
 name: golive-storage
 description: Guardar e servir ficheiros por projecto com o armazenamento do GoLive — carregar, listar, descarregar e apagar pela CLI ou pelo explorador do dashboard, com links temporários e facturação por GB.
+license: MIT
+metadata:
+  author: golive
+  version: "1.0"
+  language: pt
 ---
 
 # GoLive — Armazenamento de ficheiros

@@ -1,6 +1,11 @@
 ---
 name: golive-auth
 description: Adicionar autenticação de utilizadores à tua app com o auth gerido do GoLive — activar, usar o SDK @golive/auth no cliente (apiKey + tenant), gerir utilizadores, e a facturação por MAU.
+license: MIT
+metadata:
+  author: golive
+  version: "1.0"
+  language: pt
 ---
 
 # GoLive — Autenticação (MAU)

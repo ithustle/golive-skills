@@ -1,6 +1,11 @@
 ---
 name: golive-deploy
 description: Publicar um projecto no GoLive — instalar a CLI, ligar a pasta, escolher o runtime (estático, edge functions, Node, Go, Next.js), fazer deploy para preview/produção, ligar o GitHub, e voltar atrás com rollback.
+license: MIT
+metadata:
+  author: golive
+  version: "1.0"
+  language: pt
 ---
 
 # GoLive — Deploy

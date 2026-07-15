@@ -1,6 +1,11 @@
 ---
 name: golive-database
 description: Usar a base de dados Postgres gerida do GoLive — criar, ligar do backend com DATABASE_URL, explorar/editar dados no SGBD do dashboard, correr SQL pela CLI, e fazer backups agendáveis com restauro.
+license: MIT
+metadata:
+  author: golive
+  version: "1.0"
+  language: pt
 ---
 
 # GoLive — Base de dados (Postgres)

@@ -1,6 +1,11 @@
 ---
 name: golive-edge-functions
 description: Escrever edge functions no GoLive — uma pasta functions/ onde cada ficheiro é uma rota, handlers em TypeScript no contrato Web/Fetch (Request → Response), com dependências npm, e como publicar e medir o consumo.
+license: MIT
+metadata:
+  author: golive
+  version: "1.0"
+  language: pt
 ---
 
 # GoLive — Edge Functions

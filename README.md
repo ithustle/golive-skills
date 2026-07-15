@@ -39,15 +39,15 @@ npx skills add ithustle/golive-skills -a claude-code -a cursor
 ```
 
 > **TM Code** ainda não é suportado pela CLI da Vercel (não tem alvo
-> `.tms/skills/`) — instala-o pelo método manual.
+> `.toquemedia-studio/skills/`) — instala-o pelo método manual.
 
 **Manual** (TM Code, ou qualquer agente):
 
 ```bash
 git clone https://github.com/ithustle/golive-skills.git
 
-# TM Code: .tms/skills/ (global: ~/.toquemedia-studio/skills/)
-cp -r golive-skills/skills/golive-deploy .tms/skills/
+# TM Code: .toquemedia-studio/skills/ (global: ~/.toquemedia-studio/skills/)
+cp -r golive-skills/skills/golive-deploy .toquemedia-studio/skills/
 
 # Claude Code: .claude/skills/ (global: ~/.claude/skills/)
 cp -r golive-skills/skills/golive-deploy .claude/skills/

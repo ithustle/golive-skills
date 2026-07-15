@@ -64,6 +64,29 @@ golive functions ls    # rotas + invocações/GB-s/Kz do período
 **Ideal para:** APIs pequenas, webhooks, redirects, ou lógica na borda sem gerir
 servidores.
 
+## Site estático + funções = dois projectos
+
+Um projecto é de um tipo só (estático **ou** edge). Uma `functions/` ao lado do
+`index.html` do site **não** é publicada como função (vai como estático ou é
+ignorada). Dá a cada um a sua raiz e publica-os em separado:
+
+```
+loja/
+  site/                 # projecto estático
+    index.html
+  api/                  # projecto edge (sem index.html aqui)
+    functions/
+      hello.ts
+```
+
+```bash
+cd site && golive deploy   # → loja.golive.ao         (estático)
+cd api  && golive deploy   # → api-da-loja.golive.ao  (funções)
+```
+
+Subdomínios diferentes; o site chama as funções pelo URL do `api-…` (com CORS se
+preciso). Cada pasta tem o seu `golive.json` (liga com `golive init` uma vez).
+
 ## Regras
 
 - O handler **tem de** devolver um `Response`. Rotas desconhecidas devolvem 404;

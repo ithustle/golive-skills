@@ -25,10 +25,10 @@ Windsurf — e qualquer agente que suporte a especificação
 
 **`npx ithustle/golive-skills`** (recomendado) — instalador próprio que cobre o
 **Claude Code E o TM Code**, incluindo os alvos que a CLI da Vercel não suporta
-(`.tms/skills` no projecto, `~/.toquemedia-studio/skills` global):
+(`.toquemedia-studio/skills` no projecto, `~/.toquemedia-studio/skills` global):
 
 ```bash
-# no teu projecto → .claude/skills/ + .tms/skills/
+# no teu projecto → .claude/skills/ + .toquemedia-studio/skills/
 npx ithustle/golive-skills
 
 # global (todos os projectos) → ~/.claude/skills/ + ~/.toquemedia-studio/skills/
@@ -49,7 +49,7 @@ npx skills add ithustle/golive-skills -a claude-code -a cursor
 
 ```bash
 git clone https://github.com/ithustle/golive-skills.git
-cp -r golive-skills/skills/golive-deploy .tms/skills/          # TM Code (projecto)
+cp -r golive-skills/skills/golive-deploy .toquemedia-studio/skills/          # TM Code (projecto)
 cp -r golive-skills/skills/golive-deploy .claude/skills/       # Claude Code
 ```
 

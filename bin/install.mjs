@@ -2,7 +2,7 @@
 // Instalador das skills do GoLive — cobre também o TM Code, que a CLI da Vercel
 // (`npx skills add`) NÃO suporta (não tem alvo .tms / .toquemedia-studio).
 //
-//   npx ithustle/golive-skills            # projecto: .claude/skills + .tms/skills
+//   npx ithustle/golive-skills            # projecto: .claude/skills + .toquemedia-studio/skills
 //   npx ithustle/golive-skills --global   # global:  ~/.claude/skills + ~/.toquemedia-studio/skills
 //   npx ithustle/golive-skills --only golive-deploy,golive-auth
 import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
@@ -28,9 +28,9 @@ if (skills.length === 0) {
   process.exit(1);
 }
 
-// Destinos por agente. TM Code é o que a CLI da Vercel não cobre:
-//  - projecto: .tms/skills  (o TM Code também lê .toquemedia-studio/skills)
-//  - global:   ~/.toquemedia-studio/skills
+// Destinos por agente. TM Code é o que a CLI da Vercel não cobre. O caminho
+// canónico do TM Code é `.toquemedia-studio/skills` (projecto E global — o mesmo
+// nome), que é o que o TM Code lê primeiro; `.tms/skills` é legado.
 const targets = isGlobal
   ? [
       ["Claude Code (global)", join(homedir(), ".claude", "skills")],
@@ -38,7 +38,7 @@ const targets = isGlobal
     ]
   : [
       ["Claude Code (projecto)", join(process.cwd(), ".claude", "skills")],
-      ["TM Code (projecto)", join(process.cwd(), ".tms", "skills")],
+      ["TM Code (projecto)", join(process.cwd(), ".toquemedia-studio", "skills")],
     ];
 
 for (const [label, dir] of targets) {

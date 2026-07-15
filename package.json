@@ -1,7 +1,7 @@
 {
   "name": "golive-skills",
-  "version": "1.0.0",
-  "description": "Skills do GoLive para agentes de código (Claude Code, TM Code, e outros)",
+  "version": "1.0.1",
+  "description": "Skills do GoLive para agentes de c\u00f3digo (Claude Code, TM Code, e outros)",
   "type": "module",
   "bin": {
     "golive-skills": "./bin/install.mjs"

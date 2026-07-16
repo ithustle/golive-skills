@@ -1,6 +1,6 @@
 {
   "name": "golive-skills",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Skills do GoLive para agentes de c\u00f3digo (Claude Code, TM Code, e outros)",
   "type": "module",
   "bin": {

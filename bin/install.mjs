@@ -5,7 +5,7 @@
 //   npx ithustle/golive-skills            # projecto: .claude/skills + .toquemedia-studio/skills
 //   npx ithustle/golive-skills --global   # global:  ~/.claude/skills + ~/.toquemedia-studio/skills
 //   npx ithustle/golive-skills --only golive-deploy,golive-auth
-import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,12 +41,26 @@ const targets = isGlobal
       ["TM Code (projecto)", join(process.cwd(), ".toquemedia-studio", "skills")],
     ];
 
+let anyFail = false;
 for (const [label, dir] of targets) {
   mkdirSync(dir, { recursive: true });
+  let ok = 0;
   for (const name of skills) {
-    cpSync(join(SKILLS_DIR, name), join(dir, name), { recursive: true });
+    const dest = join(dir, name);
+    try {
+      // remove o que lá estiver (symlink da CLI da Vercel, ficheiro ou pasta antiga)
+      // — senão o cpSync rebenta com ERR_FS_CP_DIR_TO_NON_DIR sobre um symlink.
+      rmSync(dest, { recursive: true, force: true });
+      cpSync(join(SKILLS_DIR, name), dest, { recursive: true });
+      ok++;
+    } catch (e) {
+      anyFail = true;
+      console.error(`  ✗ ${name} → ${label}: ${e instanceof Error ? e.message : e}`);
+    }
   }
-  console.log(`✔ ${skills.length} skill(s) → ${label}\n  ${dir}`);
+  // um alvo a falhar não impede os outros (ex.: TM Code instala mesmo que .claude falhe)
+  console.log(`✔ ${ok}/${skills.length} skill(s) → ${label}\n  ${dir}`);
 }
 console.log(`\nSkills: ${skills.join(", ")}`);
 console.log(isGlobal ? "" : "Dica: usa --global para instalar para todos os projectos.");
+if (anyFail) process.exitCode = 1;

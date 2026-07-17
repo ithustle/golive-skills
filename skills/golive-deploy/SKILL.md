@@ -4,7 +4,7 @@ description: Publicar um projecto no GoLive — instalar a CLI, ligar a pasta, e
 license: MIT
 metadata:
   author: golive
-  version: "1.0"
+  version: "1.2"
   language: pt
 ---
 
@@ -33,10 +33,11 @@ de `--project`. Todos os comandos aceitam `--json` (output para máquinas).
 | Next.js | `next` nas deps | SSR em contentor (ou estático com `next export`) |
 | Node + Express | `express` nas deps | Contentor gerido |
 | Go | `go.mod` na raiz | Contentor gerido |
-| Edge functions | pasta `functions/`, sem framework | Isolados V8 na borda (ver skill `golive-edge-functions`) |
+| Edge functions | pasta `functions/` (sem app framework) | **Backend gerido** na borda + DB GoLive (ver `golive-edge-functions`) |
 | HTML estático | fallback | Estático (edge) |
 
-Backends escutam `process.env.PORT` (Node) ou `$PORT` (Go).
+- **Edge** = API controlada pela plataforma (CORS, `DATABASE_URL` GoLive).
+- **Backend** (Node/Go/Next) = mais controlo; DB GoLive **ou** a tua (Mongo, etc.). Escuta `process.env.PORT` / `$PORT`.
 
 ## Publicar
 
@@ -66,9 +67,9 @@ golive logs [--no-follow]    # build + runtime em directo
 
 ## Notas
 
-- O plano **Free** dá 1 projecto estático. Domínios próprios, backends, edge
-  functions, base de dados e auth exigem o plano **Pague por uso** (medido ao
-  uso, facturado no dia 28 em Kz; requer NIF, sem cartão de crédito).
-- Serviços por projecto (ver skills próprios): base de dados (`golive-database`),
-  autenticação (`golive-auth`), armazenamento (`golive-storage`), edge functions
-  (`golive-edge-functions`).
+- **Free:** 1 site estático, 1 GB, 20 min build, Postgres 100 MB, Auth 100 users.
+  **Sem** backends nem edge. **Pague por uso:** backends, edge, domínios, escala
+  (facturado no dia 28; NIF).
+- Escolha de runtime: API + **DB GoLive** → edge functions; stack livre / Mongo →
+  backend. Skills: `golive-database`, `golive-edge-functions`, `golive-auth`,
+  `golive-storage`.

@@ -1,99 +1,143 @@
 ---
 name: golive-edge-functions
-description: Escrever edge functions no GoLive — uma pasta functions/ onde cada ficheiro é uma rota, handlers em TypeScript no contrato Web/Fetch (Request → Response), com dependências npm, e como publicar e medir o consumo.
+description: Edge functions GoLive — handlers Request→Response, CORS, pg+DATABASE_URL (pooler), Dev Pack local (functions + db), deploy. Não inventar frameworks.
 license: MIT
 metadata:
   author: golive
-  version: "1.0"
+  version: "1.5"
   language: pt
 ---
 
 # GoLive — Edge Functions
 
-Funções serverless que correm na **borda** (isolados V8), perto do utilizador, e
-escalam sozinhas. Facturadas por invocação: **1.648 Kz / 500.000**.
+**Backend gerido**: cada ficheiro em `functions/` é uma rota HTTP. A plataforma
+trata de HTTPS, domínio, escala, **CORS** (allowlist) e injecta
+**`DATABASE_URL`** (Postgres GoLive, URL **pooler**).
 
-## Estrutura: cada ficheiro é uma rota
+Facturação: **~1.648 Kz / 500.000** invocações (PAYG).
 
-Uma pasta `functions/` sem framework (sem `package.json` de app, sem
-`index.html`) — o `golive deploy` deteta o tipo automaticamente.
+> **Edge vs Backend**
+> - **Edge** = API da plataforma + **só** Postgres GoLive (`pg`).
+> - **Backend** (Node/Go/Next) = mais controlo; DB GoLive **ou** a tua (Mongo…).
+> - **Free**: sem edge/backends. DB 100 MB só consola/CLI.
+
+## Estrutura e contrato
 
 | Ficheiro | Rota |
 |---|---|
 | `functions/index.ts` | `/` |
 | `functions/hello.ts` | `/hello` |
-| `functions/api/users.ts` | `/api/users` |
-
-Ficheiros ou pastas começados por `_` (ex.: `_lib.ts`) são **privados**: podes
-importá-los, mas não viram rota.
-
-## Handler: contrato Web/Fetch
-
-Escreve em **TypeScript** (`.ts`) ou JS (`.mjs`) — o deploy **compila e empacota**
-por ti, sem `tsconfig` nem build da tua parte. Cada ficheiro exporta um `default`
-que recebe um `Request` e devolve um `Response` (as APIs standard da Web):
+| `functions/api/items.ts` | `/api/items` |
+| `functions/_db.ts` | **privado** (sem rota; importável) |
 
 ```ts
-// functions/hello.ts  ->  /hello?name=Ana
+// export default (request: Request, env?) => Response | Promise<Response>
 export default async (request: Request) => {
-  const name = new URL(request.url).searchParams.get("name") ?? "world";
-  return Response.json({ hello: name });
+  return Response.json({ ok: true, path: new URL(request.url).pathname });
 };
 ```
 
-Tens a `Request` inteira: `request.method`, `request.url`, `request.headers` e o
-corpo com `await request.json()` / `request.text()`. Devolves qualquer `Response`
-(`Response.json(...)`, HTML, redirects, streams…).
-
-## Dependências
-
-Podes fazer `import` de pacotes npm e de outros ficheiros — o deploy empacota
-tudo num módulo auto-contido por rota:
-
-```ts
-// functions/slug.ts
-import slugify from "slugify";        // pacote npm
-import { greet } from "./_lib.js";    // ficheiro teu (privado)
-
-export default (request: Request) =>
-  Response.json({ slug: slugify(greet("Olá Mundo")) });
-```
-
-## Publicar
+- Devolve **sempre** um `Response`.
+- Rota inexistente → `404` `{ "error": "no_such_function" }`.
+- CORS: `OPTIONS` pela plataforma; origins = `*.golive.ao`, `*.golive.co.ao`,
+  localhost, domínio custom. **Outras origins não recebem ACAO.**
 
 ```bash
-golive deploy          # deteta edge-functions, empacota e publica as rotas
-golive functions ls    # rotas + invocações/GB-s/Kz do período
+golive deploy
+golive functions ls
 ```
 
-**Ideal para:** APIs pequenas, webhooks, redirects, ou lógica na borda sem gerir
-servidores.
+## Postgres na edge (prod)
 
-## Site estático + funções = dois projectos
+```bash
+golive db create   # PAYG, no projecto edge
+# package.json: { "dependencies": { "pg": "^8.13.0" } }
+```
 
-Um projecto é de um tipo só (estático **ou** edge). Uma `functions/` ao lado do
-`index.html` do site **não** é publicada como função (vai como estático ou é
-ignorada). Dá a cada um a sua raiz e publica-os em separado:
+```ts
+// functions/_db.ts
+// 1) Lê DATABASE_URL só dentro da query (Dev Pack injecta por pedido).
+// 2) Client connect/end por query — fiável em local (pglite) e ok na edge (pooler).
+import pg from "pg";
+
+export async function query(text: string, params?: unknown[]) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL em falta");
+  const local =
+    connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+  const client = new pg.Client({
+    connectionString,
+    connectionTimeoutMillis: 10_000,
+    ssl: local ? false : { rejectUnauthorized: false },
+  });
+  await client.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+```
+
+Alternativa em prod com tráfego: `pg.Pool({ max: 1 })` **lazy** (criar no 1º pedido,
+não no top-level do módulo).
+
+**Regras**
+- **Nunca** `new pg.Pool({ connectionString: process.env.DATABASE_URL })` no top-level:
+  no Dev Pack a env ainda não existe no `require` do handler → `AggregateError`.
+- Em local, evita vários `Pool` (cada ficheiro edge é um bundle).
+- URL prod = **pooler**. DB externa → backend, não edge.
+
+## Dev Pack (local) — OBRIGATÓRIO para desenvolver offline
+
+```bash
+golive dev init    # multiselect: ↑/↓ · Space · Enter — activa Functions + Database
+golive dev         # painel http://localhost:18321/__golive/
+```
+
+Com **Functions** + **Database** no Dev Pack:
+
+| Env injectada | Uso |
+|---|---|
+| `DATABASE_URL` | Postgres **pglite** local (não é a cloud) |
+| `GOLIVE_AUTH_*` | se Auth on |
+| `GOLIVE_STORAGE_*` | se Storage on |
+
+- Handlers em `functions/` são **reempacotados ao gravar**.
+- Podes ter **site Vite + functions no mesmo host**: rotas exactas de function
+  têm prioridade sobre o estático (`/hello` vs `/`).
+- Seed opcional: `seed.sql` + `"dev": { "seed": "seed.sql" }` no `golive.json`.
+- SQL no painel: tab **Database**.
+
+```bash
+# Legado ainda funciona:
+golive dev --db
+```
+
+**Não** uses `yarn dev` sozinho se precisas de `DATABASE_URL` / edge local —
+usa `golive dev` com o Dev Pack.
+
+## Multi-alvo (site + API em prod)
 
 ```
 loja/
-  site/                 # projecto estático
-    index.html
-  api/                  # projecto edge (sem index.html aqui)
-    functions/
-      hello.ts
+  golive.json   # apps.site + apps.api
+  web/          # estático
+  api/functions/
 ```
 
 ```bash
-cd site && golive deploy   # → loja.golive.ao         (estático)
-cd api  && golive deploy   # → api-da-loja.golive.ao  (funções)
+golive deploy          # as duas
+golive dev             # multi: portas 18321, 18322, …
 ```
 
-Subdomínios diferentes; o site chama as funções pelo URL do `api-…` (com CORS se
-preciso). Cada pasta tem o seu `golive.json` (liga com `golive init` uma vez).
+CORS: site `*.golive.ao` → API `*.golive.ao` ok.
 
-## Regras
+## Checklist do agente
 
-- O handler **tem de** devolver um `Response`. Rotas desconhecidas devolvem 404;
-  erros no handler devolvem 500 com a mensagem.
-- `_ficheiro` / `_pasta` são privados (importáveis, mas não são rotas).
+- [ ] Handlers Web/Fetch; pasta `functions/`; `_` = privado
+- [ ] `pg` + `Pool({ max: 1 })` + `process.env.DATABASE_URL`
+- [ ] Local: Dev Pack **Functions** (+ **Database** se SQL)
+- [ ] Prod: `golive db create` no projecto edge + `golive deploy`
+- [ ] Sem Express/Fastify na edge; sem Mongo na edge
+- [ ] Sem inventar rotas de plataforma (`/api/v1/...` da app ≠ control plane)

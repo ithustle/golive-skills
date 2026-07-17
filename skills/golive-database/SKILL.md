@@ -1,61 +1,118 @@
 ---
 name: golive-database
-description: Usar a base de dados Postgres gerida do GoLive — criar, ligar do backend com DATABASE_URL, explorar/editar dados no SGBD do dashboard, correr SQL pela CLI, e fazer backups agendáveis com restauro.
+description: Postgres GoLive — criar, DATABASE_URL (pooler), edge max:1, backend, Dev Pack pglite local, CLI, SGBD, backups. Não nomear o fornecedor cloud.
 license: MIT
 metadata:
   author: golive
-  version: "1.0"
+  version: "1.5"
   language: pt
 ---
 
 # GoLive — Base de dados (Postgres)
 
-Cada projecto pode ter **uma** base de dados Postgres gerida. Requer o plano
-Pague por uso.
+Cada projecto tem **no máximo uma** base Postgres gerida.
 
-## Criar e ligar
+**Nunca** digas o nome do fornecedor cloud ao utilizador final (marca branca).
+
+## Onde podes usar
+
+| Onde | DB GoLive (`DATABASE_URL` pooler) | DB externa |
+|---|---|---|
+| **Edge functions** | **Sim** — injectada; `pg` com **`max: 1`** | **Não** → backend |
+| **Backend** Node/Go/Next | **Sim** | **Sim** (tu configuras) |
+| **Free** (só estático) | Consola/CLI até 100 MB; sem edge/backend | — |
+| **Dev Pack local** | pglite + `DATABASE_URL` em `golive dev` | — |
+
+## Produção
 
 ```bash
-golive db create        # provisiona o Postgres
-golive db info          # detalhes; golive db destroy apaga
+golive db create
+golive db info
+golive db url              # export DATABASE_URL=$(golive db url)
+golive db query "select 1"
 ```
 
-No deploy seguinte o backend recebe `DATABASE_URL` no ambiente — liga-te com o
-driver normal do teu stack:
+No **deploy** de edge (e backends geridos), a plataforma injecta `DATABASE_URL`
+(string **pooler** quando aplicável).
+
+### Edge
+
+Ver skill **golive-edge-functions**. Resumo:
+
+```ts
+// Client por query — DATABASE_URL só no pedido (Dev Pack); estável com pglite local
+import pg from "pg";
+
+export async function query(text: string, params?: unknown[]) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL em falta");
+  const local =
+    connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+  const client = new pg.Client({
+    connectionString,
+    ssl: local ? false : { rejectUnauthorized: false },
+  });
+  await client.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+```
+
+### Backend Node
 
 ```js
-// Node — pg
 import pg from "pg";
-const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
-await db.connect();
-const { rows } = await db.query("select * from clientes limit 10");
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
 ```
 
-## SQL pela CLI
+## Dev Pack (local)
+
+```bash
+golive dev init    # activa Database (e Functions se precisares de API)
+golive dev         # DATABASE_URL → pglite em .golive/dev/pg/
+```
+
+| | Local (Dev Pack) | Produção |
+|---|---|---|
+| Motor | **pglite** (ficheiros em `.golive/dev/`) | Postgres gerido (pooler) |
+| URL | injectada (`postgresql://…localhost…` ou socket) | `golive db url` / inject no deploy |
+| Dados | **não** são a DB de prod | cloud |
+| Seed | `seed.sql` se `"dev": { "seed": "seed.sql" }` | migrações tuas |
+| SQL UI | painel `/__golive/` → Database | dashboard → SGBD |
+
+```bash
+# Legado:
+golive dev --db
+```
+
+**Agente:** em local, **não** assumes Neon/cloud; usa a `DATABASE_URL` do env do
+`golive dev`. Cria tabelas via `seed.sql` ou SQL no painel.
+
+## CLI / dashboard / backups (prod)
 
 ```bash
 golive db query "select count(*) from pedidos"
-cat schema.sql | golive db query        # também aceita SQL por stdin
+golive db backup create
+golive db backup schedule daily
+golive db backup restore <id>
 ```
 
-## SGBD no dashboard
+Dashboard: explorador de tabelas, CRUD, SQL.
 
-O separador **Base de dados** traz: navegador de tabelas, grelha de dados com
-criar/editar/apagar linhas, vista de estrutura (colunas, índices, restrições),
-um construtor de tabelas visual e um **editor SQL** com realce de sintaxe e
-autocompletar.
+## Limites e preços
 
-## Backups & restauro
+- Free: **100 MB**, sem edge/backend.
+- PAYG: escala; edge e backends ok.
+- Backups retidos: **~1.250 Kz/GB·mês**.
 
-```bash
-golive db backup create             # backup imediato
-golive db backup schedule daily     # ou weekly / off
-golive db backup ls
-golive db backup restore <id>       # repõe os dados nesse ponto
-```
+## Checklist do agente
 
-Cada backup é uma cópia lógica completa (tabelas, dados, sequências, índices e
-restrições), guardada comprimida. Retidos são cobrados como armazenamento
-(**1.250 Kz/GB·mês**).
-
-**Ideal para:** adicionar persistência a um backend, ou gerir/migrar o schema.
+- [ ] Uma DB por projecto; criar com `golive db create` (prod)
+- [ ] Edge: `max: 1`; backend: pool razoável (ex. 5)
+- [ ] Local: Dev Pack **Database** ou `golive dev --db` + seed se preciso
+- [ ] Não misturar dados pglite local com prod
+- [ ] Não nomear o fornecedor Postgres cloud em copy de cliente
+- [ ] DB externa → backend, não edge

@@ -4,7 +4,7 @@ description: Postgres GoLive — CLI, @golive/data SDK (browser Free sem edge), 
 license: MIT
 metadata:
   author: golive
-  version: "1.8"
+  version: "1.9"
   language: pt
 ---
 
@@ -91,6 +91,20 @@ API do query builder:
 - Filtros: `eq neq gt gte lt lte like ilike in is contains containedBy overlaps textSearch not match or`
 - Paginacao: `order limit offset range single maybeSingle count`
 - Funcoes: `db.rpc(name, args)` · SQL total (serviceKey): `db.sql(text, params)`
+
+### Datas voltam como string ISO
+
+Colunas `date` e `timestamptz` chegam ao cliente como string ISO
+(`"2026-07-19T00:00:00.000Z"`), não como `Date`. Formata sempre no **fuso
+local**:
+
+```js
+new Date(linha.data).toLocaleDateString("pt-AO");   // 19/07/2026
+```
+
+❌ Não cortes a string (`linha.data.slice(0, 10)`): a oeste de UTC devolve o
+**dia anterior**. Em Angola (UTC+1) uma `date` guardada como 19/07 serializa
+para `2026-07-18T23:00:00.000Z` — o corte dá 18/07.
 
 ### SQL livre (só serviceKey — edge/backend)
 

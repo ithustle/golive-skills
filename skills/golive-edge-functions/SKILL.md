@@ -4,7 +4,7 @@ description: Edge functions GoLive — handlers Request→Response, CORS, pg+DAT
 license: MIT
 metadata:
   author: golive
-  version: "1.5"
+  version: "1.7"
   language: pt
 ---
 
@@ -132,6 +132,15 @@ golive dev             # multi: portas 18321, 18322, …
 ```
 
 CORS: site `*.golive.ao` → API `*.golive.ao` ok.
+
+## Dados: @golive/data vs pg
+
+Na edge tens **duas opções**:
+
+1. **`@golive/data`** com `serviceKey` (`GOLIVE_DATA_SERVICE_KEY`) — query builder + `rpc` + `sql` (todo o Postgres), sem montar SQL à mão se nao quiseres.
+2. **`pg` + `DATABASE_URL`** — controlo total (pool lazy / client por pedido).
+
+No **browser Free** usa só `@golive/data` + JWT (sem edge). Ver skill **golive-database**.
 
 ## Checklist do agente
 

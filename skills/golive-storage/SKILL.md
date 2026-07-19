@@ -4,7 +4,7 @@ description: Armazenamento de ficheiros GoLive — SDK @golive/storage (browser 
 license: MIT
 metadata:
   author: golive
-  version: "1.3"
+  version: "1.4"
   language: pt
 ---
 
@@ -84,6 +84,25 @@ await storage.uploadPublic("logo.png", bytes);
 
 Env injectada no deploy edge: `GOLIVE_STORAGE_ENDPOINT`, `GOLIVE_PUBLIC_FILES_BASE`,
 `GOLIVE_PROJECT_ID`, `GOLIVE_DATA_SERVICE_KEY` (service key do projecto).
+
+#### Edge escreve, browser lê — sem segunda rota
+
+Quando a edge grava um ficheiro **em nome de um utilizador** (webhook recebido,
+importação, relatório gerado), escreve-o dentro de `users/{uid}/…`:
+
+```ts
+// edge, com serviceKey: pode escrever em qualquer path
+await storage.upload(`users/${userId}/webhooks/${Date.now()}.json`, corpo, {
+  contentType: "application/json",
+});
+```
+
+Como o ficheiro fica na pasta do dono, o **browser lê-o com o scope normal de
+utilizador** (`getDownloadUrl` com o path devolvido) — não é preciso uma segunda
+edge function só para servir ficheiros. Guarda o `result.path` na tabela.
+
+❌ Gravar em `public/` para o browser conseguir ler: torna o ficheiro público a
+toda a gente. `users/{uid}/` dá exactamente o alcance certo.
 
 ## CLI (owner)
 

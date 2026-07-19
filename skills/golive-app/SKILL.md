@@ -4,7 +4,7 @@ description: Scaffold de app Free no GoLive — site estático + @golive/auth + 
 license: MIT
 metadata:
   author: golive
-  version: "1.1"
+  version: "1.2"
   language: pt
 ---
 
@@ -29,7 +29,7 @@ Monta uma app **React/Vite estática** no plano Free com:
 2. [ ] Scaffold (`npm create vite@latest . -- --template react`) + instalar SDKs
 3. [ ] `golive dev init --emulators auth,database,storage`
        → gera `golive.json`, `seed.sql` e mete `.golive/` no `.gitignore`
-4. [ ] **Reescrever o `seed.sql` gerado** — ver aviso abaixo
+4. [ ] **Reescrever o `seed.sql` gerado** e confirmar o `user_id` — ver aviso abaixo
 5. [ ] Tabelas multi-user com coluna **`user_id`**
 6. [ ] `src/lib/golive.js` (ou `.ts`) + `.env.example` com `VITE_GOLIVE_*`
 7. [ ] Acrescentar `.env` ao `.gitignore` (o `dev init` só trata do `.golive/`)
@@ -53,12 +53,16 @@ Monta uma app **React/Vite estática** no plano Free com:
 
 ❌ Nunca uses `golive link` para ligar a pasta — dispara deploys.
 
-### ⚠️ O `seed.sql` gerado é um placeholder
+### ⚠️ Confirma o `seed.sql` gerado antes de o usares
 
-`golive dev init` escreve um `seed.sql` de exemplo **sem coluna `user_id`**.
-Se o aproveitares tal como está, ficas com uma app onde **todos os utilizadores
-vêem os dados uns dos outros**. Substitui-o pelo teu schema antes do primeiro
-`golive dev`.
+`golive dev init` escreve um `seed.sql` de **exemplo**. Substitui-o sempre pelo
+teu schema — e, se aproveitares a tabela de exemplo, **confirma que tem coluna
+`user_id`**.
+
+O CLI **até à versão 0.8.2** gerava-a sem essa coluna. Como é por `user_id` que
+a Data API faz o scope no browser, uma tabela multi-utilizador sem ela fica
+visível a toda a gente. Versões seguintes já a incluem, mas a verificação custa
+dois segundos e o erro é silencioso.
 
 ## Instalar SDKs
 
@@ -235,7 +239,7 @@ para provar a integração.
 - ❌ Inventar paths de auth (`/accounts:signUp`) — o SDK já sabe
 - ❌ `try/catch` à volta de `db.*` / `storage.*` à espera de apanhar erros
 - ❌ Guardar o path relativo do upload quando o SDK devolveu o absoluto
-- ❌ Usar o `seed.sql` gerado sem lhe pôr `user_id`
+- ❌ Usar o `seed.sql` gerado sem confirmar que a tabela tem `user_id`
 
 ## Referência viva
 

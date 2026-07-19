@@ -4,7 +4,7 @@ description: Edge functions GoLive — handlers Request→Response, CORS, pg+DAT
 license: MIT
 metadata:
   author: golive
-  version: "1.7"
+  version: "1.8"
   language: pt
 ---
 
@@ -83,8 +83,21 @@ Alternativa em prod com tráfego: `pg.Pool({ max: 1 })` **lazy** (criar no 1º p
 não no top-level do módulo).
 
 **Regras**
-- **Nunca** `new pg.Pool({ connectionString: process.env.DATABASE_URL })` no top-level:
-  no Dev Pack a env ainda não existe no `require` do handler → `AggregateError`.
+- **Nunca** `new pg.Pool({ connectionString: process.env.DATABASE_URL })` no
+  top-level. No Dev Pack a `DATABASE_URL` só existe **no momento do pedido** —
+  sonda numa edge function:
+
+  ```json
+  {"noCarregamentoDoModulo": null, "noPedido": "presente"}
+  ```
+
+  O pool arranca com `undefined` e **todas as rotas que tocam na base devolvem
+  500**, enquanto as que não tocam continuam a responder — o que torna o sintoma
+  enganador (parece que a função está bem e só "aquela query" é que falha).
+
+  ⚠️ O `golive dev init` **até à versão 0.8.2** gerava o `functions/_db.ts`
+  exactamente com este anti-padrão. Se o teu tiver um `pg.Pool` no top-level,
+  substitui-o pelo helper acima.
 - Em local, evita vários `Pool` (cada ficheiro edge é um bundle).
 - URL prod = **pooler**. DB externa → backend, não edge.
 
@@ -145,7 +158,7 @@ No **browser Free** usa só `@golive/data` + JWT (sem edge). Ver skill **golive-
 ## Checklist do agente
 
 - [ ] Handlers Web/Fetch; pasta `functions/`; `_` = privado
-- [ ] `pg` + `Pool({ max: 1 })` + `process.env.DATABASE_URL`
+- [ ] `pg` + `process.env.DATABASE_URL` lida **dentro** da query (nunca no top-level)
 - [ ] Local: Dev Pack **Functions** (+ **Database** se SQL)
 - [ ] Prod: `golive db create` no projecto edge + `golive deploy`
 - [ ] Sem Express/Fastify na edge; sem Mongo na edge

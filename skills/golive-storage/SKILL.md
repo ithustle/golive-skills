@@ -56,7 +56,8 @@ API: `list` · `upload` / `uploadFile` · `getDownloadUrl` · `download` · `rem
 - Upload **≤ 8 MB**: bytes pela API (fiável no browser).
 - Upload **> 8 MB**: URL assinado + PUT (`forceUrl: true` se quiseres sempre PUT).
 - Links de download **temporários (~1 h)** — `refreshDownloadUrl` se expirar.
-- Pasta **`public/`** + `getPublicUrl` / `uploadPublic` = URL **permanente** (sem JWT).
+- Ler ficheiros da pasta **`public/`**: `getPublicUrl` = URL **permanente** (sem JWT).
+- **Escrever** em `public/` (`uploadPublic` ou path `public/…`) requer `serviceKey` — no browser devolve `forbidden` (usa edge/backend).
 
 ### Edge (serviceKey unificada)
 

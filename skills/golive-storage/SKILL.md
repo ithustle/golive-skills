@@ -4,7 +4,7 @@ description: Armazenamento de ficheiros GoLive — SDK @golive/storage (browser 
 license: MIT
 metadata:
   author: golive
-  version: "1.1"
+  version: "1.2"
   language: pt
 ---
 
@@ -54,22 +54,27 @@ await storage.remove("avatar.png");
 API: `list` · `upload` / `uploadFile` · `getDownloadUrl` · `download` · `remove` · `usage`.
 
 - Upload **≤ 8 MB**: bytes pela API (fiável no browser).
-- Upload **> 8 MB**: URL assinado + PUT.
-- Links de download **temporários (~1 h)** — não uses como CDN permanente.
+- Upload **> 8 MB**: URL assinado + PUT (`forceUrl: true` se quiseres sempre PUT).
+- Links de download **temporários (~1 h)** — `refreshDownloadUrl` se expirar.
+- Pasta **`public/`** + `getPublicUrl` / `uploadPublic` = URL **permanente** (sem JWT).
 
-### Edge (serviceKey)
+### Edge (serviceKey unificada)
 
 ```ts
 const storage = new GoLiveStorage({
   projectId: process.env.GOLIVE_PROJECT_ID!,
   apiKey: process.env.GOLIVE_AUTH_API_KEY!,
-  serviceKey: process.env.GOLIVE_DATA_SERVICE_KEY, // mesma service key do projecto
+  serviceKey: process.env.GOLIVE_DATA_SERVICE_KEY, // project.serviceKey
   endpoint: process.env.GOLIVE_STORAGE_ENDPOINT,
+  publicFilesBase: process.env.GOLIVE_PUBLIC_FILES_BASE,
 });
-// service role: qualquer path (não só users/{uid}/)
+// service role: qualquer path + pasta public/
+await storage.uploadPublic("logo.png", bytes);
+// → https://…/v1/public/files/{projectId}/public/logo.png
 ```
 
-Env injectada no deploy edge: `GOLIVE_STORAGE_ENDPOINT`, `GOLIVE_PROJECT_ID`, `GOLIVE_DATA_SERVICE_KEY`.
+Env injectada no deploy edge: `GOLIVE_STORAGE_ENDPOINT`, `GOLIVE_PUBLIC_FILES_BASE`,
+`GOLIVE_PROJECT_ID`, `GOLIVE_DATA_SERVICE_KEY` (service key do projecto).
 
 ## CLI (owner)
 

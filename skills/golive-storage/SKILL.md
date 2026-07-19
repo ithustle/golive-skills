@@ -4,7 +4,7 @@ description: Armazenamento de ficheiros GoLive — SDK @golive/storage (browser 
 license: MIT
 metadata:
   author: golive
-  version: "1.2"
+  version: "1.3"
   language: pt
 ---
 
@@ -53,6 +53,14 @@ await storage.remove("avatar.png");
 
 API: `list` · `upload` / `uploadFile` · `getDownloadUrl` · `download` · `remove` · `usage`.
 
+**Este SDK nunca lança** — todos os métodos devolvem `{ …, error }`. Testa
+sempre o `error`; um `try/catch` não apanha nada. (O `@golive/auth` faz o
+contrário: **lança** `GoLiveAuthError`.)
+
+- `upload`/`uploadFile` devolvem o **path absoluto já com o scope do
+  utilizador** (`users/{uid}/avatar.png`), não o que passaste. **Guarda na base
+  de dados o `result.path`.** Os restantes métodos aceitam as duas formas — o
+  path relativo (`"avatar.png"`) e o absoluto resolvem para o mesmo objecto.
 - Upload **≤ 8 MB**: bytes pela API (fiável no browser).
 - Upload **> 8 MB**: URL assinado + PUT (`forceUrl: true` se quiseres sempre PUT).
 - Links de download **temporários (~1 h)** — `refreshDownloadUrl` se expirar.

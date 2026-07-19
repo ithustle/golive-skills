@@ -4,7 +4,7 @@ description: Postgres GoLive — CLI, @golive/data SDK (browser Free sem edge), 
 license: MIT
 metadata:
   author: golive
-  version: "1.7"
+  version: "1.8"
   language: pt
 ---
 
@@ -74,6 +74,17 @@ await db.from("profiles").upsert(
   ["user_id"],
 );
 ```
+
+**Este SDK nunca lança** — devolve sempre `{ data, count, error, status }` (e
+`row` com `.single()`/`.maybeSingle()`). Um `try/catch` à volta de um
+`db.insert()` não apanha nada: **testa sempre o `error`**.
+
+```js
+const { data, error } = await db.from("notes").insert({ … });
+if (error) return setErro(error.message);   // error.code é estável
+```
+
+(O `@golive/auth` faz o contrário: **lança** `GoLiveAuthError`.)
 
 API do query builder:
 - CRUD: `from(table|schema.table).select|insert|update|upsert|delete`

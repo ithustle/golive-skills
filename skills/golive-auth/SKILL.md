@@ -4,7 +4,7 @@ description: Auth gerido GoLive — SDK @golive/auth (prod e Dev Pack local), pa
 license: MIT
 metadata:
   author: golive
-  version: "1.3"
+  version: "1.4"
   language: pt
 ---
 
@@ -41,7 +41,23 @@ auth.onChange((user) => { /* … */ });
 CDN: `import { GoLiveAuth } from "https://golive.co.ao/sdk/auth.js"`.
 
 Métodos: `signUp`, `signIn`, `signOut`, `getIdToken`, `sendPasswordReset`,
-`updateProfile`, `onChange`, `currentUser`. Erros: `GoLiveAuthError` com `.code`.
+`updateProfile`, `onChange`, `currentUser`.
+
+**Erros: este SDK _lança_** `GoLiveAuthError` (com `.code` estável — ex.
+`EMAIL_EXISTS`, `INVALID_LOGIN_CREDENTIALS`, `quota_exceeded`). Envolve as
+chamadas em `try/catch`:
+
+```js
+try {
+  await auth.signIn(email, password);
+} catch (err) {
+  if (err.code === "INVALID_LOGIN_CREDENTIALS") setErro("Email ou password errados.");
+  else setErro(err.message);
+}
+```
+
+⚠️ Ao contrário do `@golive/data` e do `@golive/storage`, que **devolvem**
+`{ data, error }` e nunca lançam. Não uses o mesmo padrão nos três.
 
 ## Dev Pack (local) — OBRIGATÓRIO para `golive dev`
 

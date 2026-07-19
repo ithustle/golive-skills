@@ -4,7 +4,7 @@ description: Publicar um projecto no GoLive — instalar a CLI, ligar a pasta, e
 license: MIT
 metadata:
   author: golive
-  version: "1.2"
+  version: "1.3"
   language: pt
 ---
 
@@ -59,9 +59,12 @@ golive rollback [deployId]   # volta ao deploy anterior (sem id: o último váli
 golive env set K=V           # var de ambiente (injectada no próximo deploy)
 golive env file .env         # envia um .env inteiro de uma vez
 golive env ls / pull         # listar / escrever um .env local
-golive domains add exemplo.ao  # domínio próprio (cria um CNAME -> cname.golive.ao; SSL automático)
 golive logs [--no-follow]    # build + runtime em directo
 ```
+
+**Domínios próprios não têm comando na CLI** — configura-os no dashboard
+(projecto → Domínios): cria um CNAME para `cname.golive.ao`, SSL automático.
+Não existe `golive domains`.
 
 **Ideal para:** primeiro deploy, ligar CI por GitHub, ou automatizar publicações.
 

@@ -4,7 +4,7 @@ description: Scaffold de app Free no GoLive — site estático + @golive/auth + 
 license: MIT
 metadata:
   author: golive
-  version: "1.0"
+  version: "1.1"
   language: pt
 ---
 
@@ -23,15 +23,42 @@ Monta uma app **React/Vite estática** no plano Free com:
 
 ## Checklist do agente
 
-1. [ ] `golive login` · `golive link` (ou `golive init`)
-2. [ ] `golive auth enable` · `golive db create`
-3. [ ] Schema SQL (`seed.sql` + `golive db query` / seed no Dev Pack)
-4. [ ] Tabelas multi-user com coluna **`user_id`**
-5. [ ] Instalar SDKs e criar `src/lib/golive.js` (ou `.ts`)
-6. [ ] `.env.example` com `VITE_GOLIVE_*`
-7. [ ] `golive.json` com Dev Pack: auth + database + storage
-8. [ ] `golive dev` → provar login, CRUD, upload
-9. [ ] `golive deploy` (static)
+**Dev — é aqui que se começa. Nada de produção antes disto estar verde.**
+
+1. [ ] `golive login`
+2. [ ] Scaffold (`npm create vite@latest . -- --template react`) + instalar SDKs
+3. [ ] `golive dev init --emulators auth,database,storage`
+       → gera `golive.json`, `seed.sql` e mete `.golive/` no `.gitignore`
+4. [ ] **Reescrever o `seed.sql` gerado** — ver aviso abaixo
+5. [ ] Tabelas multi-user com coluna **`user_id`**
+6. [ ] `src/lib/golive.js` (ou `.ts`) + `.env.example` com `VITE_GOLIVE_*`
+7. [ ] Acrescentar `.env` ao `.gitignore` (o `dev init` só trata do `.golive/`)
+8. [ ] `golive dev` → provar login, CRUD e upload a sério
+
+**Produção — só depois.**
+
+9.  [ ] `golive init` — liga a pasta a um projecto (escreve o `projectId`)
+10. [ ] `golive auth enable` · `golive db create`
+11. [ ] `golive db query < seed.sql` — aplica o schema (aceita arg ou stdin; **não há `-f`**)
+12. [ ] `golive env file .env` — envia as `VITE_GOLIVE_*`
+13. [ ] `golive deploy --preview` → `golive deploy --prod`
+
+### Três comandos que se confundem
+
+| Comando | O que faz |
+|---|---|
+| `golive dev init` | configura os **emuladores locais** (é este o do fluxo de dev) |
+| `golive init` | liga a pasta a um projecto **de produção** |
+| `golive link` | liga um **repo GitHub** e passa a fazer deploy a cada push |
+
+❌ Nunca uses `golive link` para ligar a pasta — dispara deploys.
+
+### ⚠️ O `seed.sql` gerado é um placeholder
+
+`golive dev init` escreve um `seed.sql` de exemplo **sem coluna `user_id`**.
+Se o aproveitares tal como está, ficas com uma app onde **todos os utilizadores
+vêem os dados uns dos outros**. Substitui-o pelo teu schema antes do primeiro
+`golive dev`.
 
 ## Instalar SDKs
 
@@ -90,9 +117,39 @@ export const storage = new GoLiveStorage({
 });
 ```
 
+## Modelo de erros — os SDKs não são todos iguais
+
+Lê isto antes de escreveres a primeira chamada. É a causa nº1 de código que
+*parece* certo e falha em silêncio.
+
+| SDK | Comporta-se como |
+|---|---|
+| `@golive/auth` | **lança** `GoLiveAuthError` (`.code`) → `try/catch` |
+| `@golive/data` | **devolve** `{ data, count, error, status }` → `if (error)` |
+| `@golive/storage` | **devolve** `{ …, error }` → `if (error)` |
+
+```js
+// auth: lança
+try {
+  await auth.signIn(email, password);
+} catch (err) {
+  setErro(err.message);           // err.code: INVALID_LOGIN_CREDENTIALS, …
+}
+
+// data / storage: devolvem — um try/catch aqui não apanha NADA
+const { error } = await db.from("notes").insert({ … });
+if (error) return setErro(error.message);
+```
+
 ## Padrões
 
-### Perfil / linhas por user
+### Linhas por user — o scope é automático
+
+A Data API no browser filtra sozinha pelo JWT: uma tabela com coluna `user_id`
+só devolve as linhas do utilizador autenticado. Por isso a coluna **tem de se
+chamar exactamente `user_id`**, e no `insert` preenche-la é responsabilidade
+tua.
+
 ```js
 await db.from("profiles").upsert({
   user_id: auth.currentUser.uid,
@@ -100,13 +157,22 @@ await db.from("profiles").upsert({
 }, ["user_id"]);
 ```
 
+Um `.match({ user_id: uid })` no select é redundante (mas inofensivo, e torna a
+intenção explícita).
+
 ### Avatar
 ```js
-await storage.uploadFile("avatar.png", file); // → users/{uid}/avatar.png
-const { url } = await storage.getDownloadUrl("avatar.png"); // ~1h
-// se expirar: storage.refreshDownloadUrl("avatar.png")
-// grava no Postgres só o path "avatar.png", não base64
+const { path, error } = await storage.uploadFile("avatar.png", file);
+// path === "users/{uid}/avatar.png" — o SDK devolve o path JÁ com scope.
+// Grava ESTE path no Postgres (nunca base64, nunca o URL assinado).
+
+const { url } = await storage.getDownloadUrl(path); // ~1h
+// se expirar: storage.refreshDownloadUrl(path)
 ```
+
+Os métodos aceitam as duas formas — `"avatar.png"` e
+`"users/{uid}/avatar.png"` resolvem para o mesmo objecto. Persiste o
+`result.path` e usa sempre esse, para não teres duas convenções na base.
 
 ### Assets públicos do projecto (edge/serviceKey)
 ```js
@@ -131,6 +197,9 @@ Valores em produção: dashboard → projecto → Auth / Database / Storage → 
 
 ## `golive.json` (Dev Pack)
 
+**Não escrevas isto à mão** — é o que `golive dev init --emulators
+auth,database,storage` gera. Serve para confirmares o resultado:
+
 ```json
 {
   "dev": {
@@ -147,6 +216,16 @@ Valores em produção: dashboard → projecto → Auth / Database / Storage → 
 }
 ```
 
+## `golive dev` — o que esperar
+
+Arranca Auth, Postgres (pglite), Storage e serve a app em `:18321`
+(painel em `/__golive/`). O `seed.sql` corre no arranque.
+
+⚠️ **Não há HMR.** O `golive dev` faz `npm run build` e serve o `dist/` — não é
+o dev server do Vite. Depois de mexeres no código, reinicia. Para iteração
+rápida de UI, corre o `npm run dev` do Vite em paralelo e usa o `golive dev`
+para provar a integração.
+
 ## Anti-padrões
 
 - ❌ `DATABASE_URL` / `serviceKey` no bundle do browser
@@ -154,6 +233,9 @@ Valores em produção: dashboard → projecto → Auth / Database / Storage → 
 - ❌ Edge no Free só para CRUD simples (usa Data API)
 - ❌ Links assinado como CDN permanente (usa `public/` + `getPublicUrl`)
 - ❌ Inventar paths de auth (`/accounts:signUp`) — o SDK já sabe
+- ❌ `try/catch` à volta de `db.*` / `storage.*` à espera de apanhar erros
+- ❌ Guardar o path relativo do upload quando o SDK devolveu o absoluto
+- ❌ Usar o `seed.sql` gerado sem lhe pôr `user_id`
 
 ## Referência viva
 
